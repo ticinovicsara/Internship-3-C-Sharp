@@ -21,7 +21,7 @@ namespace Project_Manager
             ProjectTask task22 = new ProjectTask("task22", "task 2 for project 2", DateTime.Now.AddDays(-15), ProjectTask.TaskStatus.Finished, 60, project2);
             ProjectTask task23 = new ProjectTask("task23", "task 3 for project 2", DateTime.Now.AddDays(7), ProjectTask.TaskStatus.OnHold, 90, project2);
 
-            Project project3 = new Project("project2", "second project", DateTime.Now.AddMonths(-1), Project.ProjectStatus.Finished);
+            Project project3 = new Project("project3", "third project", DateTime.Now.AddMonths(-1), Project.ProjectStatus.Finished);
             ProjectTask task31 = new ProjectTask("task31", "task 1 for project 3", DateTime.Now.AddDays(-20), ProjectTask.TaskStatus.Finished, 120, project3);
             ProjectTask task32 = new ProjectTask("task32", "task 2 for project 3", DateTime.Now.AddDays(-15), ProjectTask.TaskStatus.Finished, 60, project3);
             ProjectTask task33 = new ProjectTask("task33", "task 3 for project 3", DateTime.Now.AddDays(-70), ProjectTask.TaskStatus.Finished, 90, project3);
@@ -43,7 +43,8 @@ namespace Project_Manager
                 Console.WriteLine("4 - Svi zadaci, rok za 7 dana");
                 Console.WriteLine("5 - Prikaz filtriranih projekata");
                 Console.WriteLine("6 - Upravljanje projektom");
-                Console.WriteLine("7 - Upravljanje zadatkom\n");
+                Console.WriteLine("7 - Upravljanje zadatkom");
+                Console.WriteLine("8 - Prikaz zadataka od najkraceg do najduljeg\n");
 
                 string choice = Console.ReadLine().Trim();
 
@@ -69,6 +70,9 @@ namespace Project_Manager
                         break;
                     case "7":
                         ManageTask(ProjectList);
+                        break;
+                    case "8":
+                        TasksShortToLong(ProjectList);
                         break;
                     default:
                         Console.Clear();
@@ -246,7 +250,13 @@ namespace Project_Manager
             string new_name = "";
             while (true)
             {
-                Console.WriteLine("Unesite naziv projekta koji zelite obrisati: ");
+                Console.WriteLine("Dostupni projekti: \n");
+                foreach (var project in ProjectList)
+                {
+                    Console.WriteLine($"\nProjekt: {project.Key.Name} - {project.Key.Status}");
+                }
+
+                Console.WriteLine("\nUnesite naziv projekta koji zelite obrisati: ");
                 new_name = Console.ReadLine();
 
                 if (String.IsNullOrEmpty(new_name))
@@ -395,19 +405,27 @@ namespace Project_Manager
             Console.WriteLine("\nPritisnite bilo sto za povratak...");
             Console.ReadKey();
             Console.Clear();
-            return;
         }
 
 
         static void AddTaskToProject(Dictionary<Project, List<ProjectTask>> ProjectList, Project new_project)
         {
             Console.Clear();
-            Console.WriteLine("Dodaj novi zadatak:\n");
+            Console.WriteLine("Izbornik: Dodaj novi zadatak\n");
             Console.WriteLine("Unesite '0' za povratak ili bilo sto drugo za nastavak\n");
             string choice = Console.ReadLine();
 
             if (choice == "0")
             {
+                Console.Clear();
+                return;
+            }
+
+            if(new_project.Status == Project.ProjectStatus.Finished)
+            {
+                Console.WriteLine($"Projekt '{new_project.Name}' je zavrsen te se ne moze dodati novi zadatak\n");
+                Console.WriteLine("\nPritisnite bilo sto za povratak...");
+                Console.ReadKey();
                 Console.Clear();
                 return;
             }
@@ -545,7 +563,7 @@ namespace Project_Manager
             ProjectList[new_project].Add(newTask);
 
             Console.Clear();
-            Console.WriteLine($"Zadatak {taskName} uspjesno dodan u projekt {new_project.Name}");
+            Console.WriteLine($"Zadatak '{taskName}' uspjesno dodan u projekt '{new_project.Name}'");
 
             Console.WriteLine("\nPritisnite bilo sto za povratak...");
             Console.ReadKey();
@@ -564,7 +582,13 @@ namespace Project_Manager
 
             while (true)
             {
-                Console.WriteLine("Unesite naziv projekta: \n");
+                Console.WriteLine("Dostupni projekti: \n");
+                foreach (var project in ProjectList)
+                {
+                    Console.WriteLine($"\nProjekt: {project.Key.Name} - {project.Key.Status}");
+                }
+
+                Console.WriteLine("\nUnesite naziv projekta: \n");
                 name = Console.ReadLine();
 
                 if (String.IsNullOrEmpty(name))
@@ -597,7 +621,8 @@ namespace Project_Manager
          
             while (true)
             {
-                Console.WriteLine("\n1 -  Ispis svih zadataka unutar projekta");
+                Console.WriteLine("Izbornik: Upravljanje projektom\n");
+                Console.WriteLine("1 -  Ispis svih zadataka unutar projekta");
                 Console.WriteLine("2 -  Prikaz detalja projekta");
                 Console.WriteLine("3 -  Uredjivanje statusa projekta");
                 Console.WriteLine("4 -  Dodavanje zadatka");
@@ -664,10 +689,7 @@ namespace Project_Manager
             Console.Clear();
             Console.WriteLine($"Prikaz detalja projekta {curr_project.Name}\n");
 
-            foreach (var task in ProjectList[curr_project])
-            {
-                Console.WriteLine($"\tZadatak: {task.Name} - Status: {task.Status} - Rok: {task.Deadline?.ToString("dd-MM-yyyy")} - Ocekivano trajanje: {task.EstimatedDuration} minutes");
-            }
+            Console.WriteLine($"Ime: {curr_project.Name}\nStatus: {curr_project.Status}\nOpis: {curr_project.Description}\nDatum pocetka: {curr_project.StartDate}\nRok: {curr_project.EndDate}\n");
 
             Console.WriteLine("\nPritisnite bilo sto za povratak...\n");
             Console.ReadKey();
@@ -678,16 +700,18 @@ namespace Project_Manager
         static void EditStatus(Dictionary<Project, List<ProjectTask>> ProjectList, Project curr_project)
         {
             Console.Clear();
-            Console.WriteLine($"Uredjivanje statusa projekta {curr_project.Name}\n");
 
-            ProjectTask.TaskStatus status = ProjectTask.TaskStatus.Active;
+            Project.ProjectStatus status = Project.ProjectStatus.Active;
             string status_input;
+
             while (true)
             {
-                Console.WriteLine("Unesite status projekta (Active, OnHold, Finished)");
+                Console.WriteLine($"Uredjivanje statusa projekta {curr_project.Name}\n");
+                Console.WriteLine($"Trenutni status: {curr_project.Status}\n");
+                Console.WriteLine("\nUnesite status projekta (Active, OnHold, Finished)");
                 status_input = Console.ReadLine();
 
-                if (Enum.TryParse(status_input, out status) && Enum.IsDefined(typeof(ProjectTask.TaskStatus), status))
+                if (Enum.TryParse(status_input, out status) && Enum.IsDefined(typeof(Project.ProjectStatus), status))
                 {
                     if (curr_project.Status == Project.ProjectStatus.Finished)
                     {
@@ -698,6 +722,23 @@ namespace Project_Manager
                         return;
                     }
 
+
+                    if (status == Project.ProjectStatus.Finished)
+                    {
+                        foreach(var task in ProjectList[curr_project])
+                        {
+                            if(task.Status != ProjectTask.TaskStatus.Finished)
+                            {
+                                task.Status = ProjectTask.TaskStatus.Finished;
+                            }
+                        }
+
+                        curr_project.Status = Project.ProjectStatus.Finished;
+                        Console.WriteLine($"Projekt '{curr_project.Name}' je zavrsen, kao i njegovi zadaci\n");
+                        break;
+                    }
+                    curr_project.Status = status;
+                    Console.WriteLine($"Status projekta '{curr_project.Name}' je uredjen\n");
                     break;
                 }
                 else
@@ -708,7 +749,9 @@ namespace Project_Manager
                 }
             }
 
-
+            Console.WriteLine("\nPritisnite bilo sto za povratak...");
+            Console.ReadKey();
+            Console.Clear();
         }
 
         static void DeleteTaskFromProject(Dictionary<Project, List<ProjectTask>> ProjectList, Project curr_project)
@@ -748,7 +791,7 @@ namespace Project_Manager
             {
                 while (true)
                 {
-                    Console.WriteLine($"Jeste li sigurni da zelite izbrisati zadatak '{to_delete}' (yes/no)?");
+                    Console.WriteLine($"Jeste li sigurni da zelite izbrisati zadatak '{to_delete.Name}' (yes/no)?");
                     string confirmation = Console.ReadLine();
 
                     if (confirmation.ToLower() == "no")
@@ -791,7 +834,7 @@ namespace Project_Manager
         static void ViewActiveTasksTime(Dictionary<Project, List<ProjectTask>> ProjectList, Project curr_project)
         {
             Console.Clear();
-            Console.WriteLine($"Prikaz ukupnog ocekivanog vremena za aktivne zadatke u projektu {curr_project.Name}");
+            Console.WriteLine($"Prikaz ukupnog ocekivanog vremena za aktivne zadatke u projektu '{curr_project.Name}'\n");
 
             int time = 0;
 
@@ -804,7 +847,7 @@ namespace Project_Manager
             }
             if(time == 0)
             {
-                Console.WriteLine("Nema aktivnih zadtaka u ovom projektu");
+                Console.WriteLine("Nema aktivnih zadataka u ovom projektu\n");
             }
             else
             {
@@ -860,7 +903,7 @@ namespace Project_Manager
                 {
                     foreach (var task in taskList)
                     {
-                        Console.WriteLine($"\t{task.Name} - Status: {task.Status} - Rok: {task.Deadline?.ToString("dd-MM-yyyy")} - Ocekivano trajanje: {task.EstimatedDuration} minutes");
+                        Console.WriteLine($"\t{task.Name} - Status: {task.Status}");
                     }
                     Console.WriteLine("\n");
                 }
@@ -917,7 +960,7 @@ namespace Project_Manager
                         selectedTask.Status = newStatus;
 
                         Console.Clear();
-                        Console.WriteLine($"\nStatus zadatka '{selectedTask.Name}' je uspjesno promijenjen na {newStatus}\n");
+                        Console.WriteLine($"\nStatus zadatka '{selectedTask.Name}' je uspjesno promijenjen na '{newStatus}'\n");
                         break;
                     }
                     else
@@ -928,6 +971,35 @@ namespace Project_Manager
                     }
                 }
 
+                Project curr_project = selectedTask.Project;
+                
+                bool finishedTasks = ProjectList[curr_project].All(task => task.Status == ProjectTask.TaskStatus.Finished);
+                if (finishedTasks)
+                {
+                    Project.ProjectStatus status = Project.ProjectStatus.Finished;
+                    curr_project.Status = status;
+                    Console.WriteLine("\nSvi zadaci u projektu su zavrseni\n");
+                }
+
+            }
+
+            Console.WriteLine("\nPritisnite bilo sto za povratak...");
+            Console.ReadKey();
+            Console.Clear();
+        }
+
+        static void TasksShortToLong(Dictionary<Project, List<ProjectTask>> ProjectList)
+        {
+            Console.Clear();
+            Console.WriteLine("zadaci sortirani od najkraceg do najduljeg trajanja\n");
+
+            var allTasks = ProjectList.Values.SelectMany(tasks => tasks).ToList();
+
+            var sorted = allTasks.OrderBy(task => task.EstimatedDuration).ToList();
+
+            foreach(var task in sorted)
+            {
+                Console.WriteLine($"{task.Name} - Trajanje: {task.EstimatedDuration} minuta");
             }
 
             Console.WriteLine("\nPritisnite bilo sto za povratak...");
